@@ -9,23 +9,30 @@
 <html>
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-        <title>Space Invaders: Log IN</title>
+        <title>Space Invaders: Log In</title>
+        <link rel="stylesheet" type="text/css" href="assets/css/form.css" />
     </head>
     <body>
         <% 
-            if(request.getParameter("failedLogin") == true){
-                
+            String failedLogin = request.getParameter("failedLogin");
+            if(failedLogin != null && failedLogin.equals("true")){
+                out.println("<script>");
+                out.println("alert('Unsuccessful login attempt, please try again');");
+                out.println("</script>");
             }
         %>
-        <form id="login" name="login" action="index.jsp" method="post">
-            <label id="lblUsersname" for="txtUsername">Enter Name: </label>
-            <input type="text" id="txtUsername" />
-            <br />
-            <label id="lblPassword" for="txtPassword">Enter Password:</label>
-            <input type="password" id="txtPassword" />
-            <br />
-            <input type="submit" id="btnSumbit" value="Submit">
-            <a href="Register.jsp">Register</a>
+        <h1>Log In</h1>
+        <form id="login" name="login" action="LoginVerification" method="post">
+            <div id="Username">
+                <label id="lblUsername" for="txtUsername">Enter Name: </label>
+                <input type="text" id="txtUsername" name="txtUsername"/>
+            </div>
+            <div id="Password">
+                <label id="lblPassword" for="txtPassword">Enter Password:</label>
+                <input type="password" id="txtPassword" name="txtPassword" />
+            </div>
+            <a href="register.jsp">Register</a>
+            <input type="submit" id="btnSubmit" value="Log In">
         </form>
     </body>
 </html>
