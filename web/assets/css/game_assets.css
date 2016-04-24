@@ -1,0 +1,36 @@
+/*
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+*/
+/* 
+    Created on : Apr 6, 2016, 8:07:33 PM
+    Author     : Logan
+*/
+
+#gamearea {
+    position: absolute;
+    left: 5px;
+    top: 5px;
+    height: 600px;
+    width: 800px;
+}
+
+.game-asset {
+    position: absolute;
+}
+
+#Status {
+    position: relative;
+    text-align: center;
+    top: 200px;
+}
+
+#aliens {
+    table-layout: fixed;
+}
+
+#aliens td {
+    width: 45px;
+    height: 30px;
+}
