@@ -3,26 +3,31 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-var GAME_HEIGHT = 480;
-var GAME_WIDTH = 640;
+var GAME_HEIGHT;
+var GAME_WIDTH;
 var aliens;
 var shots;
 var ship;
 var gameActive = false;
 var gameClock;
+var endBoundary;
 
 function init(){
-    $("#Status").text("Loading");
+    status("LOADING");
     
-    $("#gamearea").width(GAME_WIDTH).height(GAME_HEIGHT);
-        aliens = {
+    GAME_HEIGHT = $(document).height();
+    GAME_WIDTH = $(document).width();
+    
+    aliens = {
         table: $("#aliens"), // table DOM object
-        getAliens: function(){return $(".alien");}, // array of aliens DOM objects
+        getAliens: function(){
+            return $(".alien");
+        }, // array of aliens DOM objects
         tick: (function(){
             var timer = 100; // state variable, counts ticks
             return function(){
                 timer++;
-                if(timer >= 5 + aliens.getAliens().length){ // faster when fewer aliens
+                if(timer >= 5 + aliens.getAliens().length/2){ // faster when fewer aliens
                     aliens.move();
                     timer = 0;
                 }
@@ -51,11 +56,10 @@ function init(){
         },
         move: function(){ // aliens advance across the screen
             move(this.table, 10*this.direction, 0);
-            if((this.direction===-1 && this.left() < 10) ||
-                    (this.direction===1 && this.right() > GAME_WIDTH-10)){
+            if((this.direction===-1 && this.left() <= 10) ||
+                    (this.direction===1 && this.right() >= GAME_WIDTH-10)){
                 move(this.table, 0, 10);
                 this.direction *= -1;
-                checkGameOver();
             }
             this.getAliens().each(function(){ // update alien position attributes
                 var alien = $(this);
@@ -83,17 +87,19 @@ function init(){
     };
 
     shots = {
-        getShots: function(){return $(".shot");},
+        getShots: function(){
+            return $(".shot");
+        },
         tick: function(){ // move all shots every tick
             this.getShots().each(function(){
                 var shot = $(this);
                 move(shot, 0, -5);
-                if(shot.data("top") < 10){
+                if(shot.data("top") <= 0){
                     miss(shot);
                 }
             });
             this.timer++;
-            if(this.shoot && this.timer > 5){ // limit shots to once per 0.5 seconds
+            if(this.shoot && this.timer > 10){ // limit shots to once per second
                 this.pew(); // pew pew
                 this.shoot = false;
                 this.timer = 0;
@@ -104,46 +110,52 @@ function init(){
         numShots: function(){
             return this.getShots().length;
         },
-        fire: function(){
+        fire: function(){ // enqueues shot for next clock tick
             if(this.numShots() < 10){ // limit number of active shots
                this.shoot = true;
             }
         },
-        pew: function(){ // add new shot
+        pew: function(){ // actually shoots by adding new projectile
             var newShot = $("<img src='assets/images/shot.gif' class='shot game-asset'>");
             $(document.body).append(newShot);
-            newShot.data("height", newShot.height());
+            newShot.data("height", newShot.height()); // initialize cached data
             newShot.data("width", newShot.width());
-            place(newShot, ship.position().x, ship.position().y);
+            var x = ship.position().x;
+            var y = ship.position().y - 20;
+            place(newShot, x, y);
         }
     };
     
+    // set up new table of aliens
     aliens.table.empty(); // clear existing aliens
     var alienRow = $("<tr>");
     var alien = $("<td><img class='alien' src='assets/images/alien.gif'/></td>");
-    for(var j = 0; j < 10; j++){
+    for(var j = 0; j < 11; j++){ // add aliens to row
         alien.clone().appendTo(alienRow);
     }
-    for(var i = 0; i < 4; i++){ // adding rows
+    for(var i = 0; i < 5; i++){ // add rows to table
         alienRow.clone().appendTo(aliens.table);
     }
     place(aliens.table, 10, 10);
     
-    place(ship.ship, (GAME_WIDTH-ship.ship.width())/2, GAME_HEIGHT-ship.ship.height());
+    place(ship.ship, (GAME_WIDTH-ship.ship.width())/2, GAME_HEIGHT-ship.ship.height()-5);
     
-    $("#Status").text("PRESS ANY BUTTON TO BEGIN");
+    status("PRESS ANY BUTTON TO BEGIN");
     
     $(".game-asset, .alien").each(function(){ // cache data for performance
         var asset = $(this);
         asset.data("width", asset.width());
         asset.data("height", asset.height());
-    })
+    });
+    
+    endBoundary = GAME_HEIGHT - 10 - aliens.getAliens().data("height");
     
     gameClock = getGameClock(function(){
         aliens.tick();
         ship.tick();
         shots.tick();
         checkAliensShot();
+        checkGameOver();
     });
 }
 
@@ -162,24 +174,49 @@ function getGameClock(tick){ // close that keeps track of timers
 }
 
 function startGame(){
-    $("#Status").text("");
+    status();
     gameClock.start();
     gameActive = true;
 }
 
+function checkGameOver(){
+    if(aliens.getAliens().length === 0){ // all aliens dead!
+        gameOver("You win!");
+    }
+    if(aliens.getAliens().last().data("top") >= endBoundary){ // aliens advanced
+        gameOver("You lose!");
+    }    
+}
+
+$(document).unload(gameOver); // browser closed
+
+function gameOver(message){
+    $.getJSON("ws_readscores", function(scores){
+        var currentScore = scores.currentScore;
+        var highestScore = scores.highScore;
+        var message = "Your score: " + currentScore+"\n";
+        message += "Highest score: " + highestScore;
+        alert(message);
+        init();
+    });
+    gameActive = false;
+    gameClock.finish();
+    status(message);
+}
+
 function checkAliensShot(){
     shots.getShots().each(function(){
-        var shot = $(this);
+        var shot = $(this); // jQuery wrapper over DOM object
         aliens.getAliens().each(function(){
-            var alien = $(this);
+            var alien = $(this); // jQuery wrapper over DOM objects
             if(collide(shot, alien)){
-                shot.attr("data-dead", true);
+                shot.attr("data-dead", true); // flag to prevent multiple hits
                 alien.attr("data-dead", true);
                 trackScore(1);
             }
         });
     });
-    $("[data-dead=true]").remove();
+    $("[data-dead=true]").remove(); // clear dead elements
 }
 
 function miss(shot){
@@ -188,7 +225,7 @@ function miss(shot){
 }
 
 function trackScore(x){
-    return;
+    $.post("ws_savescore?score="+x);
 }
 
 function handleInput(event){
@@ -230,6 +267,10 @@ function place(object, x, y){
 
 function move(object, x, y){
     place(object, object.data("left")+x, object.data("top")+y);
+}
+
+function status(message){
+    $("#Status").text(message || "");
 }
 
 $(document).ready(function(){
