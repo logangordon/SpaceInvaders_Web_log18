@@ -4,6 +4,10 @@ import edu.pitt.utilities.DbUtilities;
 import java.lang.StringBuilder;
 import java.sql.ResultSet;
 
+/**
+ * Represents an entry in the User table in the database
+ * @author Logan Gordon
+ */
 public class User {
 	private int userID;
 	private String lastName;
@@ -45,7 +49,11 @@ public class User {
 	public void setLoggedIn(boolean loggedIn) {
 		this.loggedIn = loggedIn;
 	}
-
+            
+        /**
+         * Constructor for loading values from database
+         * @param userID Database primary key
+         */
 	public User(int userID){
 		DbUtilities db = new DbUtilities();
 		StringBuilder query = new StringBuilder(250);
@@ -66,6 +74,11 @@ public class User {
 		}
 	}
 	
+        /**
+         * Used for verifying login credentials, initializes User if valid
+         * @param email User's email address
+         * @param password User's login password
+         */
 	public User(String email, String password){
 		DbUtilities db = new DbUtilities();
 		StringBuilder query = new StringBuilder(100);
@@ -92,6 +105,13 @@ public class User {
 		}
 	}
 	
+        /**
+         * Constructor for creating a new User in the database
+         * @param lastName
+         * @param firstName
+         * @param email
+         * @param password 
+         */
 	public User(String lastName, String firstName, String email, String password){
 		this.lastName = lastName;
 		this.firstName = firstName;
@@ -121,6 +141,9 @@ public class User {
 		}
 	}
 	
+        /**
+         * Save updated user info to the database
+         */
 	public void saveUserInfo(){
 		DbUtilities db = new DbUtilities();
 		StringBuilder query = new StringBuilder(250);
@@ -128,7 +151,7 @@ public class User {
 		query.append("SET lastName = '" + this.lastName + "','");
 		query.append("firstName = '" + this.firstName + "','");
 		query.append("email = " + this.email + "' ");
-		if(this.password != null){
+		if(this.password != null){ // don't want to double-hash password
 			query.append(",password = MD5('" + this.password + "')");
 		}
 		query.append(";");

@@ -16,8 +16,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 /**
- *
- * @author Logan
+ * Web servlet that verifies login credentials, and redirects user appropriately
+ * @author Logan Gordon
  */
 @WebServlet(urlPatterns = {"/LoginVerification"})
 public class LoginVerification extends HttpServlet {
@@ -36,12 +36,13 @@ public class LoginVerification extends HttpServlet {
         String username = request.getParameter("txtUsername");
         String password = request.getParameter("txtPassword");
         
+        // Verify login through appropriate User constructor
         User user = new User(username, password);
-        if(user.isLoggedIn()){
+        if(user.isLoggedIn()){ // redirect to game page
             HttpSession session = request.getSession(true);
             session.setAttribute("user", user);
             response.sendRedirect("game.jsp");
-        } else {        
+        } else { // send back to login screen
             HttpSession session = request.getSession(true);
             session.setAttribute("user", null);
             response.sendRedirect("index.jsp?failedLogin=true");

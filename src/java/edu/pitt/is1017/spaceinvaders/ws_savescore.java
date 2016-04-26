@@ -15,7 +15,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 /**
- *
+ * Logs hit & miss to database
  * @author Logan
  */
 @WebServlet(name = "ws_savescore", urlPatterns = {"/ws_savescore"})
@@ -25,7 +25,7 @@ public class ws_savescore extends HttpServlet {
      * Processes requests for both HTTP <code>GET</code> and <code>POST</code>
      * methods.
      *
-     * @param request servlet request
+     * @param request servlet request: Contains score value
      * @param response servlet response
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs

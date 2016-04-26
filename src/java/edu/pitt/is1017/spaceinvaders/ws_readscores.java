@@ -18,7 +18,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 /**
- *
+ * Loads score values at game end
  * @author Logan
  */
 @WebServlet(name = "ws_readscores", urlPatterns = {"/ws_readscores"})
@@ -29,12 +29,14 @@ public class ws_readscores extends HttpServlet {
      * methods.
      *
      * @param request servlet request
-     * @param response servlet response
+     * @param response servlet response: A JSON file representing high scores
      * @throws ServletException if a servlet-specific error occurs
      * @throws IOException if an I/O error occurs
      */
     protected void processRequest(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
+        
+        // returns a JSON file
         response.setContentType("application/json");
         
         // prevent client-side caching
@@ -53,7 +55,7 @@ public class ws_readscores extends HttpServlet {
                     e.printStackTrace();
                 }
             }
-            tracker.recordFinalScore();
+            tracker.recordFinalScore(); // this call signals game overs
             int highscore = tracker.getHighestScore();
             int currentScore = tracker.getCurrentScore();
             session.removeAttribute("scoretracker"); // reset score tracker

@@ -3,6 +3,8 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
+
+// Global variables
 var GAME_HEIGHT;
 var GAME_WIDTH;
 var aliens;
@@ -12,6 +14,10 @@ var gameActive = false;
 var gameClock;
 var endBoundary;
 
+/** 
+ * Sets up all game state, called on page load and game reset
+ * @author Logan Gordon
+ */
 function init(){
     status("LOADING");
     
@@ -20,9 +26,9 @@ function init(){
     
     aliens = {
         table: $("#aliens"), // table DOM object
-        getAliens: function(){
+        getAliens: function(){ // array of alien <img> tags
             return $(".alien");
-        }, // array of aliens DOM objects
+        }, 
         tick: (function(){
             var timer = 100; // state variable, counts ticks
             return function(){
@@ -54,14 +60,14 @@ function init(){
             });
             return acc + this.getAliens().data("width");
         },
-        move: function(){ // aliens advance across the screen
+        move: function(){ // advances aliens across the screen
             move(this.table, 10*this.direction, 0);
-            if((this.direction===-1 && this.left() <= 10) ||
+            if((this.direction===-1 && this.left() <= 10) || // change direction
                     (this.direction===1 && this.right() >= GAME_WIDTH-10)){
                 move(this.table, 0, 10);
                 this.direction *= -1;
             }
-            this.getAliens().each(function(){ // update alien position attributes
+            this.getAliens().each(function(){ // update position attributes
                 var alien = $(this);
                 var pos = alien.offset();
                 alien.data("left", pos.left);
@@ -87,11 +93,11 @@ function init(){
     };
 
     shots = {
-        getShots: function(){
+        getShots: function(){ // array of active projectile DOM objects
             return $(".shot");
         },
-        tick: function(){ // move all shots every tick
-            this.getShots().each(function(){
+        tick: function(){ 
+            this.getShots().each(function(){ // move all shots every tick
                 var shot = $(this);
                 move(shot, 0, -5);
                 if(shot.data("top") <= 0){
@@ -99,7 +105,7 @@ function init(){
                 }
             });
             this.timer++;
-            if(this.shoot && this.timer > 10){ // limit shots to once per second
+            if(this.shoot && this.timer > 10){ // limit firing to one per second
                 this.pew(); // pew pew
                 this.shoot = false;
                 this.timer = 0;
@@ -107,7 +113,7 @@ function init(){
         },
         timer: 0, // rate-limiter for shots
         shoot: false, // input flag: if true, will attempt to shoot when allowed
-        numShots: function(){
+        numShots: function(){ // number of active shots
             return this.getShots().length;
         },
         fire: function(){ // enqueues shot for next clock tick
@@ -115,7 +121,7 @@ function init(){
                this.shoot = true;
             }
         },
-        pew: function(){ // actually shoots by adding new projectile
+        pew: function(){ // creates new projectile object
             var newShot = $("<img src='assets/images/shot.gif' class='shot game-asset'>");
             $(document.body).append(newShot);
             newShot.data("height", newShot.height()); // initialize cached data
@@ -138,6 +144,7 @@ function init(){
     }
     place(aliens.table, 10, 10);
     
+    // place ship
     place(ship.ship, (GAME_WIDTH-ship.ship.width())/2, GAME_HEIGHT-ship.ship.height()-5);
     
     status("PRESS ANY BUTTON TO BEGIN");
@@ -148,8 +155,10 @@ function init(){
         asset.data("height", asset.height());
     });
     
+    // aliens getting this far means game end
     endBoundary = GAME_HEIGHT - 10 - aliens.getAliens().data("height");
     
+    // one timer object drives all game logic
     gameClock = getGameClock(function(){
         aliens.tick();
         ship.tick();
@@ -159,13 +168,18 @@ function init(){
     });
 }
 
-function getGameClock(tick){ // close that keeps track of timers
+/**
+ * Factory pattern: Each game needs a new timer object
+ * @param {function} tick function called every game clock tick
+ * @returns Object with start() and finish() methods to start and clear clock
+ */
+function getGameClock(tick){
     var id;
     return {
         start: function(){
             id = window.setInterval(function(){
                 tick();
-            }, 100);
+            }, 100); // state update 10x per second
         },
         finish: function(){
             window.clearInterval(id);
@@ -173,12 +187,18 @@ function getGameClock(tick){ // close that keeps track of timers
     };
 }
 
-function startGame(){
-    status();
+/**
+ * Puts game into active state
+ */
+function startGame(){ // when user hits a button to begin the game
+    status(); // clear status message
     gameClock.start();
     gameActive = true;
 }
 
+/**
+ * Checks game-end conditions and signals win or loss
+ */
 function checkGameOver(){
     if(aliens.getAliens().length === 0){ // all aliens dead!
         gameOver("You win!");
@@ -190,8 +210,12 @@ function checkGameOver(){
 
 $(document).unload(gameOver); // browser closed
 
-function gameOver(message){
-    $.getJSON("ws_readscores", function(scores){
+/**
+ * Halts game action, records final score, displays high score
+ * @param {String} message displayed to user
+ */
+function gameOver(message){ // handles game end
+    $.getJSON("ws_readscores", function(scores){ // display score
         var currentScore = scores.currentScore;
         var highestScore = scores.highScore;
         var message = "Your score: " + currentScore+"\n";
@@ -199,11 +223,16 @@ function gameOver(message){
         alert(message);
         init();
     });
+    
+    // game state updates
     gameActive = false;
     gameClock.finish();
     status(message);
 }
 
+/**
+ * Checks for collision between bullets & aliens and removes elements
+ */
 function checkAliensShot(){
     shots.getShots().each(function(){
         var shot = $(this); // jQuery wrapper over DOM object
@@ -219,15 +248,27 @@ function checkAliensShot(){
     $("[data-dead=true]").remove(); // clear dead elements
 }
 
+/**
+ * Records score and removes bullet element
+ * @param {shot} shot
+ */
 function miss(shot){
     shot.remove();
     trackScore(-1);
 }
 
+/**
+ * Logs hit or miss scores to database
+ * @param {int} x score: 1 for hit, -1 for miss
+ */
 function trackScore(x){
     $.post("ws_savescore?score="+x);
 }
 
+/**
+ * Displatches keyboard input
+ * @param {event} event contains keypress information
+ */
 function handleInput(event){
     if(!gameActive){
         startGame();
@@ -246,6 +287,12 @@ function handleInput(event){
     }
 }
 
+/**
+ * Checks if two elements overlap, using cached data values for performance
+ * @param {jQuery} a DOM object
+ * @param {jQuery} b DOM object
+ * @returns {Boolean} true if elements overlap
+ */
 function collide(a, b){
     var al = a.data("left");
     var ar = al + a.data("width");
@@ -256,23 +303,40 @@ function collide(a, b){
     var bt = b.data("top");
     var bb = bt + b.data("height");
     return !(al > br || bl > ar || at > bb || bt > ab ||
-            a.data("dead") || b.data("dead"));
+            a.data("dead") || b.data("dead")); // skips flagged objects
 }
 
+/**
+ * Repositions object parameter using absolute coordinates
+ * @param {jQuery} object to be placed
+ * @param {int} x coordinate in pixels
+ * @param {int} y coordinate in pixels
+ */
 function place(object, x, y){
     object.css({left: x+"px", top: y+"px"});
     object.data("left", x);
     object.data("top", y);
 }
 
+/**
+ * Repositions object parameter using relative coordinates
+ * @param {jQuery} object
+ * @param {int} x coordinate in pixels
+ * @param {int} y coordinate in pixels
+ */
 function move(object, x, y){
     place(object, object.data("left")+x, object.data("top")+y);
 }
 
+/**
+ * Updates status message
+ * @param {string} message to display
+ */
 function status(message){
     $("#Status").text(message || "");
 }
 
+// Initializes game status and input dispatcher
 $(document).ready(function(){
     init();
     $(document).keydown(handleInput);

@@ -7,6 +7,10 @@ import java.util.UUID;
 
 import edu.pitt.utilities.DbUtilities;
 
+/**
+ * Class for logging partial and complete score values to database
+ * @author Logan Gordon
+ */
 public class ScoreTracker {
 	public static ScoreTracker scoreTracker;
 	
@@ -22,6 +26,11 @@ public class ScoreTracker {
 		return this.highestScore;
 	}
 	
+        /**
+         * Each ScoreTracker will log scores for a unique Gmae ID
+         * @param user The User that will be credited in the database
+         * @throws Exception 
+         */
 	public ScoreTracker(User user) throws Exception{
 		if(!user.isLoggedIn()){
 			throw new Exception("User is not logged in");
@@ -47,6 +56,10 @@ public class ScoreTracker {
 		}
 	}
 	
+        /**
+         * Records a single hit or miss to the database
+         * @param point 1 for hit, -1 for miss
+         */
 	public void recordScore(int point){
 		this.currentScore += point;
 		DbUtilities db = new DbUtilities();
@@ -65,6 +78,9 @@ public class ScoreTracker {
 		}
 	}
 	
+        /**
+         * Records final score to the database when the game has ended
+         */
 	public void recordFinalScore(){
 		if(currentScore > highestScore){
 			highestScore = currentScore;

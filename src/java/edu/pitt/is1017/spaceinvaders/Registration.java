@@ -15,8 +15,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 /**
- *
- * @author Logan
+ * Web servlet for creating new user account
+ * @author Logan Gordon
  */
 @WebServlet(name = "Registration", urlPatterns = {"/Registration"})
 public class Registration extends HttpServlet {
@@ -38,6 +38,7 @@ public class Registration extends HttpServlet {
         String password = request.getParameter("txtPassword");
         String confirmPassword = request.getParameter("txtConfirmPassword");
         
+        // error checking
         if(firstName==null || lastName==null || email==null || password==null ||
                 firstName.isEmpty() || lastName.isEmpty() || email.isEmpty() || password.isEmpty()){
             String errorMessage = "All fields must be present";
@@ -45,12 +46,14 @@ public class Registration extends HttpServlet {
             return;
         }
         
+        // form validation
         if(!password.equals(confirmPassword)){
             String errorMessage = "Passwords must match";
             response.sendRedirect("register.jsp?registerFail=true&error="+errorMessage);
             return;
         }
-
+        
+        // Add entry to database by invoke appropriate User constructor
         User user = new User(lastName, firstName, email, password);
         if(user.isLoggedIn()){
             HttpSession session = request.getSession(true);
